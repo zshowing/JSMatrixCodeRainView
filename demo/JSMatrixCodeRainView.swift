@@ -276,11 +276,11 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
             self.generator.begin()
         }
         
-        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
-        
-        if motionManager.isDeviceMotionAvailable{
-            motionManager.startDeviceMotionUpdates(using: CMAttitudeReferenceFrame.xArbitraryZVertical)
-        }
+//        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
+//        
+//        if motionManager.isDeviceMotionAvailable{
+//            motionManager.startDeviceMotionUpdates(using: CMAttitudeReferenceFrame.xArbitraryZVertical)
+//        }
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -296,11 +296,11 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
             self.generator.begin()
         }
         
-        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
+//        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
         
-        if motionManager.isDeviceMotionAvailable{
-            motionManager.startDeviceMotionUpdates(using: CMAttitudeReferenceFrame.xArbitraryZVertical)
-        }
+//        if motionManager.isDeviceMotionAvailable{
+//            motionManager.startDeviceMotionUpdates(using: CMAttitudeReferenceFrame.xArbitraryZVertical)
+//        }
     }
     
     @objc func update(){
