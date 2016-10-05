@@ -11,19 +11,21 @@ import UIKit
 import QuartzCore
 //import CoreMotion
 
-struct JSMatrixConstants {
+fileprivate struct JSMatrixConstants {
     static let maxGlowLength: Int = 3 // Characters
     static let minTrackLength: Int = 8 // Characters
     static let maxTrackLength: Int = 40 // Characters
     static let charactersSpacing: CGFloat = 0.0 // pixel
+    static let characterChangeRate = 0.9
+    static let firstDropShowTime = 2.0 // Time between the First drop and the later
+    
+    // Configurable
     static let speed: TimeInterval = 0.15 // Seconds that new character pop up
     static let newTrackComingLap: TimeInterval = 0.4
-    static let characterChangeRate = 0.9
     static let tracksSpacing: Int = 5
-    static let firstDropShowTime = 2.0 // Time between the First drop and the later
 }
 
-class JSMatrixTrack: Hashable, Equatable {
+fileprivate class JSMatrixTrack: Hashable, Equatable {
     var glowLength: Int
     var fadeLength: Int
     var totalLength: Int
@@ -71,7 +73,7 @@ class JSMatrixTrack: Hashable, Equatable {
         let fadeLengthRange = length - glowLength
         fadeLength = Int(arc4random_uniform(UInt32(fadeLengthRange)))
         
-        timer = Timer.scheduledTimer(timeInterval: JSMatrixConstants.speed, target: self, selector: #selector(self.drop), userInfo: nil, repeats: true)
+        timer = Timer.scheduledTimer(timeInterval: JSMatrixDataSource.sharedDataSource.speed, target: self, selector: #selector(self.drop), userInfo: nil, repeats: true)
     }
     
     @objc func drop(){
@@ -85,11 +87,17 @@ class JSMatrixTrack: Hashable, Equatable {
     }
 }
 
-class JSMatrixDataSource{
+fileprivate class JSMatrixDataSource{
+    static let sharedDataSource: JSMatrixDataSource = JSMatrixDataSource()
+    
     static let trackNum: Int = Int(ceilf(Float(UIScreen.main.bounds.width / JSMatrixCodeRainView.characterSize.width)))
     static let maxNum: Int = Int(ceilf(Float(UIScreen.main.bounds.height / JSMatrixCodeRainView.characterSize.height)))
     var characters: [[String]] = []
     var currentTracks: Set<JSMatrixTrack> = Set()
+    
+    var speed: TimeInterval = JSMatrixConstants.speed
+    var newTrackComingLap: TimeInterval = JSMatrixConstants.newTrackComingLap
+    var trackSpacing: Int = JSMatrixConstants.tracksSpacing
     
     init() {
         for _ in 0..<JSMatrixDataSource.trackNum{
@@ -100,7 +108,7 @@ class JSMatrixDataSource{
             characters.append(track)
         }
         
-        Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.changeCharacter), userInfo: nil, repeats: true)
+        Timer.scheduledTimer(timeInterval: 0.02, target: self, selector: #selector(self.changeCharacter), userInfo: nil, repeats: true)
     }
     
     public func addTrack(track: JSMatrixTrack){
@@ -114,7 +122,7 @@ class JSMatrixDataSource{
     public func getAvailiableTracks() -> [Int]{
         var availiableTracks: [Int] = [Int](0...JSMatrixDataSource.trackNum)
         for track in currentTracks{
-            if track.topY > JSMatrixConstants.tracksSpacing{ // All the track have been shown(and the gap is enough), new ones is free to go from above
+            if track.topY > JSMatrixDataSource.sharedDataSource.trackSpacing{ // All the track have been shown(and the gap is enough), new ones is free to go from above
                 continue
             }else{
                 availiableTracks = availiableTracks.filter({ (trackNum) -> Bool in
@@ -139,14 +147,14 @@ class JSMatrixDataSource{
     }
 }
 
-protocol JSMatrixTrackGeneratorDataSource: class{
+fileprivate protocol JSMatrixTrackGeneratorDataSource: class{
     func availiableTracks() -> [Int]
 }
-protocol JSMatrixTrackGeneratorDelegate: class {
+fileprivate protocol JSMatrixTrackGeneratorDelegate: class {
     func didGeneratedNewTrack(newTrack: JSMatrixTrack)
 }
 
-class JSMatrixTrackGenerator{
+fileprivate class JSMatrixTrackGenerator{
     weak var delegate: JSMatrixTrackGeneratorDelegate?
     weak var datasource: JSMatrixTrackGeneratorDataSource?
     
@@ -168,7 +176,7 @@ class JSMatrixTrackGenerator{
     }
     
     func begin(){
-        Timer.scheduledTimer(timeInterval: JSMatrixConstants.newTrackComingLap, target: self, selector: #selector(self.produceTrack), userInfo: nil, repeats: true)
+        Timer.scheduledTimer(timeInterval: JSMatrixDataSource.sharedDataSource.newTrackComingLap, target: self, selector: #selector(self.produceTrack), userInfo: nil, repeats: true)
     }
     
     @objc func produceTrack(){
@@ -176,7 +184,7 @@ class JSMatrixTrackGenerator{
     }
 }
 
-class JSMatrixTrackLayer: CALayer {
+fileprivate class JSMatrixTrackLayer: CALayer {
     var track: JSMatrixTrack
     
     init(track _track: JSMatrixTrack) {
@@ -226,14 +234,14 @@ class JSMatrixTrackLayer: CALayer {
 }
 
 class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTrackGeneratorDelegate {
-    static let characterSet = "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
-    static let characterSize = "T".size(attributes: JSMatrixCodeRainView.getBrightnessAttributes(brightness: 1.0))
-    static func getCharacter() -> String{
+    fileprivate static let characterSet = "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
+    fileprivate static let characterSize = "T".size(attributes: JSMatrixCodeRainView.getBrightnessAttributes(brightness: 1.0))
+    fileprivate static func getCharacter() -> String{
         let randomNum = Int(arc4random_uniform(UInt32(characterSet.characters.count)))
         let randomIndex = characterSet.index(characterSet.startIndex, offsetBy: randomNum)
         return String(characterSet[randomIndex])
     }
-    static func getBrightnessAttributes(brightness: CGFloat) -> [String: Any]{
+    fileprivate static func getBrightnessAttributes(brightness: CGFloat) -> [String: Any]{
         return [NSForegroundColorAttributeName: UIColor.init(hue: 127.0/360.0, saturation: 97.0/100.0, brightness: brightness, alpha: 1.0),
                 NSFontAttributeName: UIFont(name: "Matrix Code NFI", size: 17)!,
                 NSShadowAttributeName: {
@@ -245,18 +253,34 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
                     }()]
     }
     
-    lazy var datasource: JSMatrixDataSource = JSMatrixDataSource()
-    lazy var generator: JSMatrixTrackGenerator = {
+    fileprivate lazy var datasource: JSMatrixDataSource = JSMatrixDataSource.sharedDataSource
+    fileprivate lazy var generator: JSMatrixTrackGenerator = {
         $0.delegate = self
         $0.datasource = self
         return $0
     }(JSMatrixTrackGenerator())
-    lazy var containerLayer: CALayer = {
+    fileprivate lazy var containerLayer: CALayer = {
         $0.frame = self.bounds//.insetBy(dx: -200, dy: -200)
         $0.zPosition = -CGFloat.greatestFiniteMagnitude + 1
         $0.drawsAsynchronously = true
         return $0
     }(CALayer())
+    
+    @IBInspectable var speed: CGFloat = CGFloat(JSMatrixConstants.speed){
+        didSet{
+            datasource.speed = TimeInterval(speed)
+        }
+    }
+    @IBInspectable var newTrackComingLap: CGFloat = CGFloat(JSMatrixConstants.newTrackComingLap){
+        didSet{
+            datasource.newTrackComingLap = TimeInterval(newTrackComingLap)
+        }
+    }
+    @IBInspectable var trackSpacing: Int = JSMatrixConstants.tracksSpacing{
+        didSet{
+            datasource.trackSpacing = trackSpacing
+        }
+    }
     
 //    lazy var displayLink: CADisplayLink = CADisplayLink(target: self, selector: #selector(self.update))
     
@@ -268,13 +292,6 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         
         self.backgroundColor = UIColor.black
         self.layer.addSublayer(containerLayer)
-        
-        let track = generator.getTrack(trackNumber: JSMatrixDataSource.trackNum / 2)
-        self.didGeneratedNewTrack(newTrack: track)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + JSMatrixConstants.firstDropShowTime) {
-            self.generator.begin()
-        }
         
 //        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
 //        
@@ -288,13 +305,6 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         
         self.backgroundColor = UIColor.black
         self.layer.addSublayer(containerLayer)
-        
-        let track = generator.getTrack(trackNumber: JSMatrixDataSource.trackNum / 2)
-        self.didGeneratedNewTrack(newTrack: track)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + JSMatrixConstants.firstDropShowTime) {
-            self.generator.begin()
-        }
         
 //        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
         
@@ -322,11 +332,22 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
 //        }
 //    }
     
-    func availiableTracks() -> [Int] {
+    override func willMove(toSuperview newSuperview: UIView?) {
+        super.willMove(toSuperview: newSuperview)
+        
+        let track = generator.getTrack(trackNumber: JSMatrixDataSource.trackNum / 2)
+        self.didGeneratedNewTrack(newTrack: track)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + JSMatrixConstants.firstDropShowTime) {
+            self.generator.begin()
+        }
+    }
+    
+    fileprivate func availiableTracks() -> [Int] {
         return datasource.getAvailiableTracks()
     }
     
-    func didGeneratedNewTrack(newTrack: JSMatrixTrack) {
+    fileprivate func didGeneratedNewTrack(newTrack: JSMatrixTrack) {
         newTrack.datasource = datasource
         datasource.addTrack(track: newTrack)
         let layer = JSMatrixTrackLayer(track: newTrack)
