@@ -2,7 +2,7 @@
 
 **Code Rain**, or [Digital Rain](https://en.wikipedia.org/wiki/Matrix_digital_rain), is a famous effect from the Matrix movie trilogy. This view is a Swift implementation to it.
 
-![](http://ww3.sinaimg.cn/large/5613ec79jw1f8hlc5dxv7g20a00hs7wh.gif)
+![](http://ww3.sinaimg.cn/large/5613ec79jw1f8hmevmxy9g20a00hsb29.gif)
 
 # Requirements
 
@@ -25,4 +25,4 @@ It uses the following frameworks:
 
 # License
 
-This code is distributed under the terms and conditions of the [MIT license](../LICENSE).
+This code is distributed under the terms and conditions of the [MIT license](./LICENSE).
