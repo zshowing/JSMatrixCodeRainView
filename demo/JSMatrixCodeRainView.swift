@@ -9,7 +9,7 @@
 import Foundation
 import UIKit
 import QuartzCore
-import CoreMotion
+//import CoreMotion
 
 struct JSMatrixConstants {
     static let maxGlowLength: Int = 3 // Characters
@@ -258,10 +258,10 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         return $0
     }(CALayer())
     
-    lazy var displayLink: CADisplayLink = CADisplayLink(target: self, selector: #selector(self.update))
+//    lazy var displayLink: CADisplayLink = CADisplayLink(target: self, selector: #selector(self.update))
     
-    lazy var motionManager = CMMotionManager()
-    var originRad: CGFloat?
+//    lazy var motionManager = CMMotionManager()
+//    var originRad: CGFloat?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -303,24 +303,24 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
 //        }
     }
     
-    @objc func update(){
-        if let quat = motionManager.deviceMotion?.attitude.quaternion{
-            let realRoll = atan2(2 * (quat.x * quat.y + quat.z * quat.w), 1 - 2 * (pow(quat.y, 2.0) + pow(quat.z, 2.0)))
-            //            let realPitch = atan2(2 * (quat.x * quat.w + quat.y * quat.z), 1 - 2 * (pow(quat.z, 2.0) + pow(quat.w, 2.0)))
-            //            if originRad == nil{
-            //                originRad = CGFloat(realPitch)
-            //            }
-            
-            var rollTransform = CATransform3DIdentity
-            rollTransform.m43 = (-1) / 500
-            rollTransform = CATransform3DRotate(rollTransform, CGFloat(realRoll), 0, 1, 0)
-            //            var pitchTransform = CATransform3DIdentity
-            //            pitchTransform.m43 = (-1) / 500
-            //            pitchTransform = CATransform3DRotate(pitchTransform, originRad! - CGFloat(realPitch), 1, 0, 0)
-            //            let concatTransform = CATransform3DConcat(rollTransform, pitchTransform)
-            self.containerLayer.transform = rollTransform
-        }
-    }
+//    @objc func update(){
+//        if let quat = motionManager.deviceMotion?.attitude.quaternion{
+//            let realRoll = atan2(2 * (quat.x * quat.y + quat.z * quat.w), 1 - 2 * (pow(quat.y, 2.0) + pow(quat.z, 2.0)))
+//            //            let realPitch = atan2(2 * (quat.x * quat.w + quat.y * quat.z), 1 - 2 * (pow(quat.z, 2.0) + pow(quat.w, 2.0)))
+//            //            if originRad == nil{
+//            //                originRad = CGFloat(realPitch)
+//            //            }
+//            
+//            var rollTransform = CATransform3DIdentity
+//            rollTransform.m43 = (-1) / 500
+//            rollTransform = CATransform3DRotate(rollTransform, CGFloat(realRoll), 0, 1, 0)
+//            //            var pitchTransform = CATransform3DIdentity
+//            //            pitchTransform.m43 = (-1) / 500
+//            //            pitchTransform = CATransform3DRotate(pitchTransform, originRad! - CGFloat(realPitch), 1, 0, 0)
+//            //            let concatTransform = CATransform3DConcat(rollTransform, pitchTransform)
+//            self.containerLayer.transform = rollTransform
+//        }
+//    }
     
     func availiableTracks() -> [Int] {
         return datasource.getAvailiableTracks()
