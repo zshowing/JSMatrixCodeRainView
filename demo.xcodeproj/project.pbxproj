@@ -12,6 +12,8 @@
 		54A5111B1DA401AE00BE5C34 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 54A511191DA401AE00BE5C34 /* Main.storyboard */; };
 		54A5111D1DA401AE00BE5C34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 54A5111C1DA401AE00BE5C34 /* Assets.xcassets */; };
 		54A511201DA401AE00BE5C34 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 54A5111E1DA401AE00BE5C34 /* LaunchScreen.storyboard */; };
+		54A511281DA4021500BE5C34 /* JSMatrixCodeRainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54A511271DA4021500BE5C34 /* JSMatrixCodeRainView.swift */; };
+		54A5112A1DA4031500BE5C34 /* matrixcode.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54A511291DA4031500BE5C34 /* matrixcode.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +24,8 @@
 		54A5111C1DA401AE00BE5C34 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		54A5111F1DA401AE00BE5C34 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		54A511211DA401AE00BE5C34 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		54A511271DA4021500BE5C34 /* JSMatrixCodeRainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JSMatrixCodeRainView.swift; sourceTree = "<group>"; };
+		54A511291DA4031500BE5C34 /* matrixcode.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = matrixcode.ttf; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +58,8 @@
 		54A511141DA401AE00BE5C34 /* demo */ = {
 			isa = PBXGroup;
 			children = (
+				54A511291DA4031500BE5C34 /* matrixcode.ttf */,
+				54A511271DA4021500BE5C34 /* JSMatrixCodeRainView.swift */,
 				54A511151DA401AE00BE5C34 /* AppDelegate.swift */,
 				54A511171DA401AE00BE5C34 /* ViewController.swift */,
 				54A511191DA401AE00BE5C34 /* Main.storyboard */,
@@ -126,6 +132,7 @@
 			files = (
 				54A511201DA401AE00BE5C34 /* LaunchScreen.storyboard in Resources */,
 				54A5111D1DA401AE00BE5C34 /* Assets.xcassets in Resources */,
+				54A5112A1DA4031500BE5C34 /* matrixcode.ttf in Resources */,
 				54A5111B1DA401AE00BE5C34 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -139,6 +146,7 @@
 			files = (
 				54A511181DA401AE00BE5C34 /* ViewController.swift in Sources */,
 				54A511161DA401AE00BE5C34 /* AppDelegate.swift in Sources */,
+				54A511281DA4021500BE5C34 /* JSMatrixCodeRainView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +269,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = MP78K24LXX;
 				INFOPLIST_FILE = demo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
