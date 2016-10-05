@@ -40,6 +40,11 @@ It uses the following frameworks:
 
 4. That's all. Use it as any `UIView`s.
 
+# Special Thanks
+
+The font `Matrix Code NFI` is from Norfok® Inc. software.
+
 # License
 
 This code is distributed under the terms and conditions of the [MIT license](./LICENSE.md).
+Also check the [`Matrix Code NFI` license](./NFILicense.txt) if you're intended to commerical use.
