@@ -46,5 +46,5 @@ The font `Matrix Code NFI` is from Norfok® Inc. software.
 
 # License
 
-This code is distributed under the terms and conditions of the [MIT license](./LICENSE.md).
-Also check the [`Matrix Code NFI` license](./NFILicense.txt) if you're intended to commerical use.
+This code is distributed under the terms and conditions of the [MIT license](./LICENSE.md).  
+Also check the [`Matrix Code NFI` license](./NFILicense.txt) if you're intended to commercial use.
