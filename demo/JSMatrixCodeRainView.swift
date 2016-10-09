@@ -11,6 +11,25 @@ import UIKit
 import QuartzCore
 //import CoreMotion
 
+fileprivate class PingThread: Thread{
+    var pingTaskIsRunning = false
+    var semaphore = DispatchSemaphore(value: 0)
+    override func main(){
+        while !self.isCancelled{
+            pingTaskIsRunning = true
+            DispatchQueue.main.async {
+                self.pingTaskIsRunning = false
+                self.semaphore.signal()
+            }
+            Thread.sleep(forTimeInterval: 1/30.0)
+            if pingTaskIsRunning {
+                NSLog("Delayed!")
+            }
+            _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+        }
+    }
+}
+
 fileprivate struct JSMatrixConstants {
     static let maxGlowLength: Int = 3 // Characters
     static let minTrackLength: Int = 8 // Characters
@@ -38,13 +57,13 @@ fileprivate class JSMatrixTrack: Hashable, Equatable {
     }
     var trackNum: Int
     var positionX: CGFloat{
-        return CGFloat(trackNum) * (JSMatrixCodeRainView.characterSize.width + 2.0)
+        return CGFloat(trackNum) * (JSMatrixDataSource.characterSize.width + 2.0)
     }
     var hashValue: Int{
         return trackNum
     }
     var topY: Int = 0
-    weak var layer: CALayer?
+    weak var layer: JSMatrixTrackLayer?
     weak var datasource: JSMatrixDataSource?
     var timer: Timer?
     
@@ -82,7 +101,7 @@ fileprivate class JSMatrixTrack: Hashable, Equatable {
             self.layer?.removeFromSuperlayer()
             timer?.invalidate()
         }else{
-            self.layer?.setNeedsDisplay()
+            self.layer?.drawAsync()
         }
     }
 }
@@ -90,8 +109,28 @@ fileprivate class JSMatrixTrack: Hashable, Equatable {
 fileprivate class JSMatrixDataSource{
     static let sharedDataSource: JSMatrixDataSource = JSMatrixDataSource()
     
-    static let trackNum: Int = Int(ceilf(Float(UIScreen.main.bounds.width / JSMatrixCodeRainView.characterSize.width)))
-    static let maxNum: Int = Int(ceilf(Float(UIScreen.main.bounds.height / JSMatrixCodeRainView.characterSize.height)))
+    static let trackNum: Int = Int(ceilf(Float(UIScreen.main.bounds.width / JSMatrixDataSource.characterSize.width)))
+    static let maxNum: Int = Int(ceilf(Float(UIScreen.main.bounds.height / JSMatrixDataSource.characterSize.height)))
+    
+    static let characterSet = "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
+    static let characterSize = "T".size(attributes: JSMatrixDataSource.getBrightnessAttributes(brightness: 1.0))
+    static func getCharacter() -> String{
+        let randomNum = Int(arc4random_uniform(UInt32(characterSet.characters.count)))
+        let randomIndex = characterSet.index(characterSet.startIndex, offsetBy: randomNum)
+        return String(characterSet[randomIndex])
+    }
+    static func getBrightnessAttributes(brightness: CGFloat) -> [String: Any]{
+        return [NSForegroundColorAttributeName: UIColor.init(hue: 127.0/360.0, saturation: 97.0/100.0, brightness: brightness, alpha: 1.0),
+                NSFontAttributeName: UIFont(name: "Matrix Code NFI", size: 17)!,
+                NSShadowAttributeName: {
+                    let shadow = NSShadow()
+                    shadow.shadowBlurRadius = 2.0
+                    shadow.shadowColor = UIColor.init(white: 1.0, alpha: brightness)
+                    shadow.shadowOffset = CGSize.zero
+                    return shadow
+                    }()]
+    }
+    
     var characters: [[String]] = []
     var currentTracks: Set<JSMatrixTrack> = Set()
     
@@ -103,7 +142,7 @@ fileprivate class JSMatrixDataSource{
         for _ in 0..<JSMatrixDataSource.trackNum{
             var track: [String] = []
             for _ in 0..<JSMatrixDataSource.maxNum{
-                track.append(JSMatrixCodeRainView.getCharacter())
+                track.append(JSMatrixDataSource.getCharacter())
             }
             characters.append(track)
         }
@@ -141,7 +180,7 @@ fileprivate class JSMatrixDataSource{
             if arc4random_uniform(10) < UInt32(JSMatrixConstants.characterChangeRate * 10){
                 let randomNum = Int(arc4random_uniform(UInt32(JSMatrixDataSource.maxNum)))
                 let randomIndex = characters.index(0, offsetBy: randomNum)
-                characters[track][randomIndex] = JSMatrixCodeRainView.getCharacter()
+                characters[track][randomIndex] = JSMatrixDataSource.getCharacter()
             }
         }
     }
@@ -201,58 +240,54 @@ fileprivate class JSMatrixTrackLayer: CALayer {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func draw(in ctx: CGContext) {
-        super.draw(in: ctx)
+    func drawAsync() {
         
-        UIGraphicsPushContext(ctx)
-        ctx.saveGState()
-        
-        let positionY: Int = track.positionY
-        var topY: Int = track.topY
-        
-        if let col = track.datasource?.characters[track.trackNum]{
-            var range = 0..<positionY // track have not fully shown
-            if positionY > track.totalLength {
-                if positionY < JSMatrixDataSource.maxNum{ // track have fully shown
-                    range = topY..<min(topY + track.totalLength, JSMatrixDataSource.maxNum)
-                }else{ // track is truncted at bottom
-                    range = topY..<JSMatrixDataSource.maxNum
+        let track = self.track
+        DispatchQueue.global().async {
+            let size = self.bounds.size
+            UIGraphicsBeginImageContext(size)
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let createdContext = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            
+            if let context = createdContext{
+                context.saveGState()
+                
+                let positionY: Int = track.positionY
+                var topY: Int = track.topY
+                
+                if let col = track.datasource?.characters[track.trackNum]{
+                    var range = 0..<positionY // track have not fully shown
+                    if positionY > track.totalLength {
+                        if positionY < JSMatrixDataSource.maxNum{ // track have fully shown
+                            range = topY..<min(topY + track.totalLength, JSMatrixDataSource.maxNum)
+                        }else{ // track is truncted at bottom
+                            range = topY..<JSMatrixDataSource.maxNum
+                        }
+                    }
+                    for characterIndex in range{
+                        let character = col[characterIndex]
+                        
+                        character.draw(in: CGRect(origin: CGPoint(x:0, y: CGFloat(topY) * JSMatrixDataSource.characterSize.height), size: JSMatrixDataSource.characterSize),
+                                       withAttributes: JSMatrixDataSource.getBrightnessAttributes(brightness: track.getBrightness(currentTopY: topY, currentBottomY: positionY)))
+                        topY += 1
+                    }
+                }
+                context.restoreGState()
+                self.render(in: context)
+                let resultImage = UIGraphicsGetImageFromCurrentImageContext();
+                DispatchQueue.main.async {
+                    if let image = resultImage{
+                        self.contents = image.cgImage
+                    }
                 }
             }
-            for characterIndex in range{
-                let character = col[characterIndex]
-                
-                character.draw(in: CGRect(origin: CGPoint(x:0, y: CGFloat(topY) * JSMatrixCodeRainView.characterSize.height), size: JSMatrixCodeRainView.characterSize),
-                               withAttributes: JSMatrixCodeRainView.getBrightnessAttributes(brightness: track.getBrightness(currentTopY: topY, currentBottomY: positionY)))
-                topY += 1
-            }
+            UIGraphicsEndImageContext()
         }
         
-        ctx.restoreGState()
-        UIGraphicsPopContext()
     }
 }
 
 class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTrackGeneratorDelegate {
-    fileprivate static let characterSet = "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
-    fileprivate static let characterSize = "T".size(attributes: JSMatrixCodeRainView.getBrightnessAttributes(brightness: 1.0))
-    fileprivate static func getCharacter() -> String{
-        let randomNum = Int(arc4random_uniform(UInt32(characterSet.characters.count)))
-        let randomIndex = characterSet.index(characterSet.startIndex, offsetBy: randomNum)
-        return String(characterSet[randomIndex])
-    }
-    fileprivate static func getBrightnessAttributes(brightness: CGFloat) -> [String: Any]{
-        return [NSForegroundColorAttributeName: UIColor.init(hue: 127.0/360.0, saturation: 97.0/100.0, brightness: brightness, alpha: 1.0),
-                NSFontAttributeName: UIFont(name: "Matrix Code NFI", size: 17)!,
-                NSShadowAttributeName: {
-                    let shadow = NSShadow()
-                    shadow.shadowBlurRadius = 2.0
-                    shadow.shadowColor = UIColor.init(white: 1.0, alpha: brightness)
-                    shadow.shadowOffset = CGSize.zero
-                    return shadow
-                    }()]
-    }
-    
     fileprivate lazy var datasource: JSMatrixDataSource = JSMatrixDataSource.sharedDataSource
     fileprivate lazy var generator: JSMatrixTrackGenerator = {
         $0.delegate = self
@@ -265,6 +300,7 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         $0.drawsAsynchronously = true
         return $0
     }(CALayer())
+//    fileprivate let pingThread = PingThread()
     
     @IBInspectable var speed: CGFloat = CGFloat(JSMatrixConstants.speed){
         didSet{
@@ -293,6 +329,8 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         self.backgroundColor = UIColor.black
         self.layer.addSublayer(containerLayer)
         
+//        pingThread.start()
+        
 //        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
 //        
 //        if motionManager.isDeviceMotionAvailable{
@@ -305,6 +343,8 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         
         self.backgroundColor = UIColor.black
         self.layer.addSublayer(containerLayer)
+        
+//        pingThread.start()
         
 //        displayLink.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
         
@@ -352,9 +392,9 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         datasource.addTrack(track: newTrack)
         let layer = JSMatrixTrackLayer(track: newTrack)
         layer.frame = CGRect(origin: CGPoint(x: newTrack.positionX, y: 0),
-                             size: CGSize(width: JSMatrixCodeRainView.characterSize.width, height: UIScreen.main.bounds.height))
+                             size: CGSize(width: JSMatrixDataSource.characterSize.width, height: UIScreen.main.bounds.height))
         containerLayer.addSublayer(layer)
-        layer.setNeedsDisplay()
+        layer.drawAsync()
         newTrack.layer = layer
     }
 }
