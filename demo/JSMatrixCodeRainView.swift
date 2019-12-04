@@ -113,16 +113,16 @@ fileprivate class JSMatrixDataSource{
     static let maxNum: Int = Int(ceilf(Float(UIScreen.main.bounds.height / JSMatrixDataSource.characterSize.height)))
     
     static let characterSet = "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
-    static let characterSize = "T".size(attributes: JSMatrixDataSource.getBrightnessAttributes(brightness: 1.0))
+    static let characterSize = "T".size(withAttributes: convertToOptionalNSAttributedStringKeyDictionary(JSMatrixDataSource.getBrightnessAttributes(brightness: 1.0)))
     static func getCharacter() -> String{
         let randomNum = Int(arc4random_uniform(UInt32(characterSet.characters.count)))
         let randomIndex = characterSet.index(characterSet.startIndex, offsetBy: randomNum)
         return String(characterSet[randomIndex])
     }
     static func getBrightnessAttributes(brightness: CGFloat) -> [String: Any]{
-        return [NSForegroundColorAttributeName: UIColor.init(hue: 127.0/360.0, saturation: 97.0/100.0, brightness: brightness, alpha: 1.0),
-                NSFontAttributeName: UIFont(name: "Matrix Code NFI", size: 17)!,
-                NSShadowAttributeName: {
+        return [convertFromNSAttributedStringKey(NSAttributedString.Key.foregroundColor): UIColor.init(hue: 127.0/360.0, saturation: 97.0/100.0, brightness: brightness, alpha: 1.0),
+                convertFromNSAttributedStringKey(NSAttributedString.Key.font): UIFont(name: "Matrix Code NFI", size: 17)!,
+                convertFromNSAttributedStringKey(NSAttributedString.Key.shadow): {
                     let shadow = NSShadow()
                     shadow.shadowBlurRadius = 2.0
                     shadow.shadowColor = UIColor.init(white: 1.0, alpha: brightness)
@@ -268,7 +268,7 @@ fileprivate class JSMatrixTrackLayer: CALayer {
                         let character = col[characterIndex]
                         
                         character.draw(in: CGRect(origin: CGPoint(x:0, y: CGFloat(topY) * JSMatrixDataSource.characterSize.height), size: JSMatrixDataSource.characterSize),
-                                       withAttributes: JSMatrixDataSource.getBrightnessAttributes(brightness: track.getBrightness(currentTopY: topY, currentBottomY: positionY)))
+                                       withAttributes: convertToOptionalNSAttributedStringKeyDictionary(JSMatrixDataSource.getBrightnessAttributes(brightness: track.getBrightness(currentTopY: topY, currentBottomY: positionY))))
                         topY += 1
                     }
                 }
@@ -397,4 +397,15 @@ class JSMatrixCodeRainView: UIView, JSMatrixTrackGeneratorDataSource, JSMatrixTr
         layer.drawAsync()
         newTrack.layer = layer
     }
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertToOptionalNSAttributedStringKeyDictionary(_ input: [String: Any]?) -> [NSAttributedString.Key: Any]? {
+	guard let input = input else { return nil }
+	return Dictionary(uniqueKeysWithValues: input.map { key, value in (NSAttributedString.Key(rawValue: key), value)})
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromNSAttributedStringKey(_ input: NSAttributedString.Key) -> String {
+	return input.rawValue
 }
